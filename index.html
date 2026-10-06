@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Кот и мышка</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+  body {
+    font-family: 'Comic Sans MS', 'Trebuchet MS', sans-serif;
+    background: linear-gradient(180deg, #ffd6e8 0%, #c8e7ff 100%);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+  }
+  h1 {
+    color: #6a3d9a;
+    text-shadow: 2px 2px 0 #fff;
+    margin-bottom: 10px;
+    font-size: 2.2em;
+  }
+  .hint {
+    background: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #444;
+    font-size: 1em;
+    margin-bottom: 15px;
+    box-shadow: 0 3px 0 #ddd;
+  }
+  .scene {
+    position: relative;
+    width: 700px;
+    max-width: 95vw;
+    height: 420px;
+    background: linear-gradient(180deg, #fff3c4 0%, #ffd98a 60%, #b8864b 60%, #8b5a2b 100%);
+    border: 6px solid #6a3d9a;
+    border-radius: 18px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.2);
+    overflow: hidden;
+  }
+  /* Персонажи */
+  .cat, .mouse {
+    position: absolute;
+    font-size: 70px;
+    bottom: 20px;
+    filter: drop-shadow(2px 4px 2px rgba(0,0,0,.3));
+    transition: transform 0.8s ease-in, opacity 0.5s ease-in;
+  }
+  .cat { left: 30px; animation: wiggle 3s ease-in-out infinite; }
+  .mouse { right: 260px; animation: wiggle 2.5s ease-in-out infinite reverse; }
+  @keyframes wiggle {
+    0%,100% { transform: translateY(0) rotate(-3deg); }
+    50% { transform: translateY(-8px) rotate(3deg); }
+  }
+  
+  /* Новые анимации для персонажей */
+  .mouse.escape {
+    animation: none;
+    transform: translate(200px, 0) scale(0.5);
+    opacity: 0;
+  }
+  .cat.sad {
+    animation: none;
+  }
+  .cat.bite {
+    animation: bite 0.6s ease-in-out;
+  }
+  .mouse.bitten {
+    animation: bitten 0.6s ease-in-out;
+  }
+  @keyframes bite {
+    0%, 100% { transform: translateX(0) rotate(0); }
+    50% { transform: translateX(100px) rotate(15deg); }
+  }
+  @keyframes bitten {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25% { transform: translateY(-20px) rotate(-10deg); }
+    75% { transform: translateY(10px) rotate(10deg); }
+  }
+  
+  /* Дверь */
+  .door-frame {
+    position: absolute;
+    right: 40px;
+    top: 60px;
+    width: 160px;
+    height: 300px;
+    background: #4a2c17;
+    border-radius: 8px 8px 0 0;
+    padding: 10px;
+  }
+  .door {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, #8b5a2b, #a0693a);
+    border-radius: 4px;
+    cursor: pointer;
+    transform-origin: left center;
+    transition: transform 1s ease;
+    box-shadow: inset 0 0 20px rgba(0,0,0,.3);
+  }
+  .door.open {
+    transform: perspective(800px) rotateY(-75deg);
+  }
+  .door-panel {
+    position: absolute;
+    top: 20px; left: 20px; right: 20px;
+    height: 100px;
+    border: 3px solid #5a3a1f;
+    border-radius: 4px;
+  }
+  .door-panel.bottom { top: auto; bottom: 20px; }
+  /* Замок */
+  .lock {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    background: radial-gradient(circle at 30% 30%, #ffd700, #b8860b);
+    border-radius: 50%;
+    box-shadow: inset -3px -3px 6px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
+  }
+  .keyhole {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 10px;
+    height: 18px;
+    background: #1a0f05;
+    border-radius: 50% 50% 2px 2px;
+  }
+  .keyhole::after {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 10px;
+    background: #1a0f05;
+  }
+  /* Ключ */
+  .key {
+    position: absolute;
+    font-size: 50px;
+    cursor: grab;
+    transition: transform .2s, filter .2s;
+    filter: drop-shadow(2px 3px 2px rgba(0,0,0,.4));
+    z-index: 10;
+    touch-action: none;
+  }
+  .key.hidden {
+    top: 280px;
+    left: 250px;
+    opacity: .55;
+    filter: grayscale(.6) drop-shadow(2px 3px 2px rgba(0,0,0,.3));
+  }
+  .key.hidden::after {
+    content: 'нажми!';
+    position: absolute;
+    top: -28px; left: 50%;
+    transform: translateX(-50%);
+    background: #ff6b9d;
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    white-space: nowrap;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.15); }
+  }
+  .key.found {
+    opacity: 1;
+    filter: drop-shadow(2px 3px 2px rgba(0,0,0,.5)) drop-shadow(0 0 10px gold);
+  }
+  .key.dragging { cursor: grabbing; z-index: 100; transition: none; }
+
+  /* Сообщения */
+  .toast {
+    position: fixed;
+    top: 30px; left: 50%;
+    transform: translateX(-50%) translateY(-120%);
+    background: #fff;
+    padding: 14px 24px;
+    border-radius: 30px;
+    font-size: 1.2em;
+    font-weight: bold;
+    box-shadow: 0 6px 20px rgba(0,0,0,.25);
+    transition: transform .4s cubic-bezier(.2,1.5,.4,1);
+    z-index: 1000;
+    border: 3px solid #6a3d9a;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.warn { border-color: #e74c3c; color: #c0392b; }
+  .toast.ok { border-color: #27ae60; color: #27ae60; }
+
+  .win {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    z-index: 500;
+    border-radius: 12px;
+  }
+  .win.show { display: flex; animation: fadeIn .6s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .win h2 {
+    color: #27ae60;
+    font-size: 2.5em;
+    margin-bottom: 10px;
+  }
+  .win p { font-size: 1.3em; color: #333; }
+  .win .emoji { font-size: 4em; margin: 10px; }
+</style>
+</head>
+<body>
+
+<h1>🐱 Кот и мышка 🔑</h1>
+<div class="hint" id="hint">Найди ключ и открой дверь!</div>
+
+<div class="scene" id="scene">
+  <div class="cat" id="cat">🐱</div>
+  <div class="mouse" id="mouse">🐭</div>
+
+  <div class="door-frame">
+    <div class="door" id="door">
+      <div class="door-panel"></div>
+      <div class="door-panel bottom"></div>
+      <div class="lock" id="lock">
+        <div class="keyhole" id="keyhole"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="key hidden" id="key">🗝️</div>
+
+  <div class="win" id="win">
+    <div class="emoji">🎉 🐭 🚪</div>
+    <h2>Дверь открыта!</h2>
+    <p>Мышка убежала, а кот остался ни с чем 😹</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+  const key = document.getElementById('key');
+  const door = document.getElementById('door');
+  const lock = document.getElementById('lock');
+  const keyhole = document.getElementById('keyhole');
+  const scene = document.getElementById('scene');
+  const toast = document.getElementById('toast');
+  const hint = document.getElementById('hint');
+  const win = document.getElementById('win');
+  const cat = document.getElementById('cat');
+  const mouse = document.getElementById('mouse');
+
+  let keyFound = false;
+  let doorOpen = false;
+
+  // Drag state
+  let dragging = false;
+  let moved = false;
+  let startX = 0, startY = 0;
+  let offsetX = 0, offsetY = 0;
+  let origLeft = 0, origTop = 0;
+
+  function showToast(msg, type) {
+    toast.textContent = msg;
+    toast.className = 'toast show ' + (type || '');
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  // Клик по ключу — найти его (через click, чтобы реагировал и на кнопку "нажми!")
+  key.addEventListener('click', function(e) {
+    if (doorOpen) return;
+    if (moved) return; // это был drag, не клик
+    if (!keyFound) {
+      keyFound = true;
+      key.classList.remove('hidden');
+      key.classList.add('found');
+      hint.textContent = 'Ключ твой! Перетащи его к замочной скважине 🔒';
+      showToast('🔑 Ключ найден!', 'ok');
+    }
+  });
+
+  key.addEventListener('pointerdown', function(e) {
+    if (doorOpen) return;
+    e.stopPropagation();
+
+    const rect = key.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    startX = e.clientX;
+    startY = e.clientY;
+    origLeft = key.offsetLeft;
+    origTop = key.offsetTop;
+    moved = false;
+    dragging = true;
+    key.setPointerCapture(e.pointerId);
+  });
+
+  document.addEventListener('pointermove', function(e) {
+    if (!dragging) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!moved && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+      moved = true;
+      key.classList.add('dragging');
+    }
+    if (moved) {
+      const sceneRect = scene.getBoundingClientRect();
+      const newLeft = e.clientX - sceneRect.left - offsetX;
+      const newTop = e.clientY - sceneRect.top - offsetY;
+      key.style.left = newLeft + 'px';
+      key.style.top = newTop + 'px';
+    }
+  });
+
+  document.addEventListener('pointerup', function(e) {
+    if (!dragging) return;
+    dragging = false;
+    key.classList.remove('dragging');
+
+    if (!moved) {
+      // вернуть на место (клик обработается отдельным обработчиком click)
+      key.style.left = origLeft + 'px';
+      key.style.top = origTop + 'px';
+      return;
+    }
+
+    // Был drag — проверяем попадание на замок
+    if (keyFound && !doorOpen) {
+      const kr = key.getBoundingClientRect();
+      const lr = lock.getBoundingClientRect();
+      // центр ключа внутри замка?
+      const kcx = kr.left + kr.width/2;
+      const kcy = kr.top + kr.height/2;
+      if (kcx >= lr.left && kcx <= lr.right && kcy >= lr.top && kcy <= lr.bottom) {
+        openDoor();
+      } else {
+        // вернуть ключ на исходное место
+        key.style.left = origLeft + 'px';
+        key.style.top = origTop + 'px';
+      }
+    } else {
+      key.style.left = origLeft + 'px';
+      key.style.top = origTop + 'px';
+    }
+  });
+
+  function openDoor() {
+    doorOpen = true;
+    door.classList.add('open');
+    key.style.display = 'none';
+    hint.textContent = '🎉 Готово! Дверь открыта.';
+    showToast('🚪 Дверь открыта!', 'ok');
+    
+    // Мышка убегает в дверь
+    mouse.classList.add('escape');
+    
+    // Кот становится грустным
+    setTimeout(() => {
+      cat.classList.add('sad');
+      cat.textContent = '😿';
+    }, 800);
+    
+    // Новое сообщение после открытия двери
+    setTimeout(() => showToast('🐭 Мышка спасена!', 'ok'), 2000);
+    setTimeout(() => win.classList.add('show'), 900);
+  }
+
+  // Клик по двери до нахождения ключа
+  door.addEventListener('click', function(e) {
+    if (doorOpen) return;
+    if (!keyFound) {
+      showToast('🔒 Сначала найди ключ!', 'warn');
+      
+      // Кот кусает мышку
+      cat.classList.add('bite');
+      mouse.classList.add('bitten');
+      
+      setTimeout(() => {
+        cat.classList.remove('bite');
+        mouse.classList.remove('bitten');
+      }, 600);
+    }
+  });
+})();
+</script>
+</body>
+</html>
